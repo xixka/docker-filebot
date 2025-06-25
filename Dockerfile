@@ -41,7 +41,6 @@ WORKDIR /tmp
 RUN \
     add-pkg --no-cache \
         bash \
-        p7zip \
         findutils \
         coreutils \
         curl \
