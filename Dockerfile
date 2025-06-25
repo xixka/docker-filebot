@@ -40,7 +40,6 @@ WORKDIR /tmp
 # Install dependencies.
 RUN \
     add-pkg \
-        font-wqy-zenhei \
         bash \
         p7zip \
         findutils \
@@ -54,7 +53,7 @@ RUN \
     # A recent version of JNA, only available in edge, is needed.
     add-pkg --repository http://dl-cdn.alpinelinux.org/alpine/edge/main \
             --repository http://dl-cdn.alpinelinux.org/alpine/edge/community \
-            --upgrade java-jna-native && \
+            --upgrade java-jna-native font-wqy-zenhei  && \
     # Remove unneeded icons.
     rm -r /usr/share/icons/Adwaita/cursors && \
     find /usr/share/icons/Adwaita -type f -name "*.svg" -delete && \
