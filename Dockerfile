@@ -82,7 +82,12 @@ RUN \
 # Generate and install favicons.
 RUN \
     APP_ICON_URL=https://raw.githubusercontent.com/jlesage/docker-templates/master/jlesage/images/filebot-icon.png && \
-    install_app_icon.sh "$APP_ICON_URL"
+    install_app_icon.sh "$APP_ICON_URL"  && \
+     # Cleanup system files
+    rm -rf \
+        /usr/share/man/* \
+        /usr/share/doc/* \
+        /var/cache/apk/*
 
 # Add files.
 COPY rootfs/ /
@@ -120,7 +125,9 @@ ENV \
     AMC_CUSTOM_OPTIONS= \
     AMC_INPUT_DIR=/watch \
     AMC_OUTPUT_DIR=/output
+    
 
+     
 # Define mountable directories.
 VOLUME ["/storage"]
 VOLUME ["/output"]
