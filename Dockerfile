@@ -131,12 +131,22 @@ RUN \
     set-cont-env DOCKER_IMAGE_VERSION "$DOCKER_IMAGE_VERSION" && \
     true
 
+RUN echo "installing CJK font..." && \
+    if apk search --no-cache font-wqy-zenhei | grep -q font-wqy-zenhei; then \
+        apk add --no-cache font-wqy-zenhei; \
+    else \
+        echo "${PACKAGES_MIRROR:-https://dl-cdn.alpinelinux.org/alpine}/v3.19/community" >> /etc/apk/repositories && \
+        apk update --no-cache && \
+        apk add --no-cache font-wqy-zenhei; \
+    fi
+
 # Set public environment variables.
 ENV \
     FILEBOT_GUI=1 \
     AMC_ENABLED=1 \
     USE_FILEBOT_BETA=0 \
-    FILEBOT_CUSTOM_OPTIONS= \
+    LANG=zh_CN.UTF-8  \
+    FILEBOT_CUSTOM_OPTIONS="-no-xattr -no-probe " \
     OPENSUBTITLES_USERNAME= \
     OPENSUBTITLES_PASSWORD= \
     AMC_INTERVAL=1800 \
