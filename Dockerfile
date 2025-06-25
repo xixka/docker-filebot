@@ -9,15 +9,9 @@ ARG DOCKER_IMAGE_VERSION=
 
 # Define software versions.
 ARG FILEBOT_VERSION=5.1.7
-ARG MEDIAINFOLIB_VERSION=24.12
-ARG ZENLIB_VERSION=0.4.41
-ARG UNRAR_VERSION=6.1.7
 
 # Define software download URLs.
 ARG FILEBOT_URL=https://get.filebot.net/filebot/FileBot_${FILEBOT_VERSION}/FileBot_${FILEBOT_VERSION}-portable.tar.xz
-ARG MEDIAINFOLIB_URL=https://mediaarea.net/download/source/libmediainfo/${MEDIAINFOLIB_VERSION}/libmediainfo_${MEDIAINFOLIB_VERSION}.tar.xz
-ARG ZENLIB_URL=https://mediaarea.net/download/source/libzen/${ZENLIB_VERSION}/libzen_${ZENLIB_VERSION}.tar.gz
-ARG UNRAR_URL=https://www.rarlab.com/rar/unrarsrc-${UNRAR_VERSION}.tar.gz
 
 # Get Dockerfile cross-compilation helpers.
 FROM --platform=$BUILDPLATFORM tonistiigi/xx AS xx
@@ -34,29 +28,6 @@ RUN \
     mkdir /opt/filebot && \
     cp -Rv /tmp/filebot/jar /opt/filebot/
 
-# Build unrar.  It has been moved to non-free since Alpine 3.15.
-# https://wiki.alpinelinux.org/wiki/Release_Notes_for_Alpine_3.15.0#unrar_moved_to_non-free
-FROM --platform=$BUILDPLATFORM alpine:3.16 AS unrar
-ARG TARGETPLATFORM
-ARG UNRAR_URL
-COPY --from=xx / /
-COPY src/unrar /build
-RUN /build/build.sh "$UNRAR_URL"
-RUN xx-verify \
-    /tmp/unrar-install/usr/bin/unrar
-
-# Build MediaInfoLib.
-FROM --platform=$BUILDPLATFORM alpine:3.16 AS libmediainfo
-ARG TARGETPLATFORM
-ARG MEDIAINFOLIB_URL
-ARG ZENLIB_URL
-COPY --from=xx / /
-COPY src/libmediainfo /build
-RUN /build/build.sh "$MEDIAINFOLIB_URL" "$ZENLIB_URL"
-RUN xx-verify \
-    /tmp/libmediainfo-install/usr/lib/libmediainfo.so \
-    /tmp/libmediainfo-install/usr/lib/libzen.so
-
 # Pull base image.
 FROM jlesage/baseimage-gui:alpine-3.16-v4.8.0
 
@@ -69,18 +40,14 @@ WORKDIR /tmp
 # Install dependencies.
 RUN \
     add-pkg \
+        font-wqy-zenhei \
         bash \
         p7zip \
         findutils \
         coreutils \
         curl \
-        ttf-dejavu \
         adwaita-icon-theme \
         openjdk17-jre \
-        # For chromaprint (fpcalc)
-        chromaprint \
-        # For libmediainfo.
-        tinyxml2 \
         # Used by Filebot as the open file window.
         zenity \
         && \
@@ -121,8 +88,6 @@ RUN \
 # Add files.
 COPY rootfs/ /
 COPY --from=filebot /opt/filebot /opt/filebot
-COPY --from=libmediainfo /tmp/libmediainfo-install/usr/lib /usr/lib
-COPY --from=unrar /tmp/unrar-install/usr/bin/unrar /usr/bin/unrar
 
 # Set internal environment variables.
 RUN \
@@ -130,15 +95,6 @@ RUN \
     set-cont-env APP_VERSION "$FILEBOT_VERSION" && \
     set-cont-env DOCKER_IMAGE_VERSION "$DOCKER_IMAGE_VERSION" && \
     true
-
-RUN echo "installing CJK font..." && \
-    if apk search --no-cache font-wqy-zenhei | grep -q font-wqy-zenhei; then \
-        apk add --no-cache font-wqy-zenhei; \
-    else \
-        echo "${PACKAGES_MIRROR:-https://dl-cdn.alpinelinux.org/alpine}/v3.19/community" >> /etc/apk/repositories && \
-        apk update --no-cache && \
-        apk add --no-cache font-wqy-zenhei; \
-    fi
 
 # Set public environment variables.
 ENV \
